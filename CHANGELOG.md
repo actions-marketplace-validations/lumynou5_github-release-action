@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Fixed
+- Add output `minor-tag` to action metadata.
+
 ## [1.2.0] - 2024-01-16
 ### Added
 - Minor tag.
