@@ -9,7 +9,7 @@ class Data(dict):
 
 
 def xstr(s):
-    return s if s is not None else ''
+    return str(s) if s is not None else ''
 
 
 def getLatestChange():
