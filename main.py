@@ -33,9 +33,9 @@ data = Data({
 })
 
 # Create release.
-tag = env['INPUT_TAG-TEMPLATE'].format_map(data)
+data['tag'] = env['INPUT_TAG-TEMPLATE'].format_map(data)
 release = repo.create_git_release(
-    tag,
+    data['tag'],
     env['INPUT_NAME-TEMPLATE'].format_map(data),
     change['raw'],
     env['INPUT_IS-DRAFT'] == 'true',
@@ -44,30 +44,27 @@ release = repo.create_git_release(
 
 # Move major tag.
 if env['INPUT_MAJOR-TAG-TEMPLATE'] != '' and data['major'] != 0:
-    major_tag = env['INPUT_MAJOR-TAG-TEMPLATE'].format_map(data)
-    major = repo.get_git_ref(f'tags/{major_tag}')
+    data['major_tag'] = env['INPUT_MAJOR-TAG-TEMPLATE'].format_map(data)
+    major = repo.get_git_ref(f'tags/{data["major_tag"]}')
     if major.ref is not None:
         major.edit(env['GITHUB_SHA'])
     else:
-        repo.create_git_ref(f'refs/tags/{major_tag}', env['GITHUB_SHA'])
+        repo.create_git_ref(f'refs/tags/{data["major_tag"]}', env['GITHUB_SHA'])
 else:
-    major_tag = ''
+    data['major_tag'] = ''
 
 # Move minor tag.
 if env['INPUT_MINOR-TAG-TEMPLATE'] != '':
-    minor_tag = env['INPUT_MINOR-TAG-TEMPLATE'].format_map(data)
-    minor = repo.get_git_ref(f'tags/{minor_tag}')
+    data['minor_tag'] = env['INPUT_MINOR-TAG-TEMPLATE'].format_map(data)
+    minor = repo.get_git_ref(f'tags/{data["minor_tag"]}')
     if minor.ref is not None:
         minor.edit(env['GITHUB_SHA'])
     else:
-        repo.create_git_ref(f'refs/tags/{minor_tag}', env['GITHUB_SHA'])
+        repo.create_git_ref(f'refs/tags/{data["minor_tag"]}', env['GITHUB_SHA'])
 else:
-    minor_tag = ''
+    data['minor_tag'] = ''
 
 # Output.
-data['tag'] = tag
-data['major-tag'] = major_tag
-data['minor-tag'] = minor_tag
 data['html-url'] = release.html_url
 data['upload-url'] = release.upload_url
 with open(env['GITHUB_OUTPUT'], 'a') as out:
