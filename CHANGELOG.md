@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- Output the changelog of last version.
 ### Fixed
 - Add output `minor-tag` to action metadata.
 

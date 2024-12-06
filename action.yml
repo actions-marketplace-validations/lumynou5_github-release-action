@@ -47,6 +47,8 @@ outputs:
     description: The build number or an empty string.
   release-date:
     description: The release date.
+  change:
+    description: The changelog of last version.
   tag:
     description: The name of the Git tag.
   major-tag:

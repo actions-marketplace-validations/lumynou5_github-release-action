@@ -30,6 +30,7 @@ data = Data({
     'prerelease': xstr(change['metadata']['semantic_version']['prerelease']),
     'build': xstr(change['metadata']['semantic_version']['buildmetadata']),
     'release-date': xstr(change['metadata']['release_date']),
+    'change': xstr(change['raw']),
 })
 
 # Create release.
@@ -37,7 +38,7 @@ data['tag'] = env['INPUT_TAG-TEMPLATE'].format_map(data)
 release = repo.create_git_release(
     data['tag'],
     env['INPUT_NAME-TEMPLATE'].format_map(data),
-    change['raw'],
+    data['change'],
     env['INPUT_IS-DRAFT'] == 'true',
     data['prerelease'] is not None,
     env['GITHUB_SHA'])
@@ -69,4 +70,7 @@ data['html-url'] = release.html_url
 data['upload-url'] = release.upload_url
 with open(env['GITHUB_OUTPUT'], 'a') as out:
     for (key, val) in data.items():
-        print(f'{key}={val}', file=out)
+        delimiter = 'EOF'
+        while delimiter in val:
+            delimiter *= 2
+        print(f'{key}<<{delimiter}\n{val}\n{delimiter}', file=out)
