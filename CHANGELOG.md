@@ -1,11 +1,19 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+## [1.3.0] - 2024-12-24
+### Added
+- Output the changelog of last version.
+### Fixed
+- Add output `minor-tag` to action metadata.
+
 ## [1.2.0] - 2024-01-16
 ### Added
 - Minor tag.
 ### Changed
-- Major tag of major version 0.
+- Major tag of major version 0 is no longer created or moved.
 ### Fixed
 - Templates using multiple parameters work as expected now.
 
@@ -26,7 +34,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - First release.
 
-[1.2.2]: https://github.com/lumynou5/github-release-action/releases/tag/v1.2.0
+[1.2.0]: https://github.com/lumynou5/github-release-action/releases/tag/v1.2.0
 [1.1.1]: https://github.com/lumynou5/github-release-action/releases/tag/v1.1.1
 [1.1.0]: https://github.com/lumynou5/github-release-action/releases/tag/v1.1.0
 [1.0.1]: https://github.com/lumynou5/github-release-action/releases/tag/v1.0.1
