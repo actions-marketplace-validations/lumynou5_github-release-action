@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [1.3.0] - 2024-12-24
 ### Added
 - Output the changelog of last version.
 ### Fixed
