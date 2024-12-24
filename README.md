@@ -91,6 +91,8 @@ replaced with the corresponding value.
 The outputs include all the parameters of templates and the following items in
 addition.
 
+- `change`
+  The changelog of the latest version.
 - `tag`
   The name of the Git tag.
 - `major-tag`
