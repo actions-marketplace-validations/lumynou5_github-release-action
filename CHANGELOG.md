@@ -34,6 +34,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - First release.
 
+[1.3.0]: https://github.com/lumynou5/github-release-action/releases/tag/v1.3.0
 [1.2.0]: https://github.com/lumynou5/github-release-action/releases/tag/v1.2.0
 [1.1.1]: https://github.com/lumynou5/github-release-action/releases/tag/v1.1.1
 [1.1.0]: https://github.com/lumynou5/github-release-action/releases/tag/v1.1.0
