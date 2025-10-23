@@ -1,6 +1,6 @@
 from os import environ as env
 import keepachangelog
-from github import Auth, Github, UnknownObjectException
+from github import Auth, Github, GithubException, UnknownObjectException
 
 
 class Data(dict):
@@ -37,14 +37,25 @@ data = Data({
 
 # Create release.
 data['tag'] = env['INPUT_TAG-TEMPLATE'].format_map(data)
-release = repo.create_git_release(
-    data['tag'],
-    env['INPUT_NAME-TEMPLATE'].format_map(data),
-    data['change'],
-    env['INPUT_IS-DRAFT'] == 'true',
-    data['prerelease'] is not None,
-    target_commitish=env['GITHUB_SHA']
-)
+try:
+    release = repo.create_git_release(
+        data['tag'],
+        env['INPUT_NAME-TEMPLATE'].format_map(data),
+        data['change'],
+        env['INPUT_IS-DRAFT'] == 'true',
+        data['prerelease'] is not None,
+        target_commitish=env['GITHUB_SHA']
+    )
+except GithubException as ex:
+    if ex.status != 422:
+        raise
+    # If the tag already exists.
+    release = repo.get_release(data['tag'])
+    release.update_release(
+        env['INPUT_NAME-TEMPLATE'].format_map(data),
+        data['change'],
+        target_commitish=env['GITHUB_SHA']
+    )
 
 # Move major tag.
 if env['INPUT_MAJOR-TAG-TEMPLATE'] != '' and data['major'] != 0:

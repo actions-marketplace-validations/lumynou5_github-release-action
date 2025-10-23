@@ -2,6 +2,9 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Changed
+- If the tag already exists, for example, the main branch is force pushed, now
+  the action won't fail and the release will be updated.
 
 ## [1.3.0] - 2024-12-24
 ### Added
@@ -23,7 +26,8 @@ All notable changes to this project will be documented in this file.
 
 ## [1.1.0] - 2023-05-05 [YANKED]
 ### Added
-- Outputs the names of the Git tags of the release and the major version; i.e., the filled templates are outputed.
+- Outputs the names of the Git tags of the release and the major version; i.e.,
+  the filled templates are outputed.
 - Input `major-tag-template` can be empty for no major tag now.
 
 ## [1.0.1] - 2023-05-01
