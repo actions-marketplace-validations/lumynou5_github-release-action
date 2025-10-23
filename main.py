@@ -1,6 +1,6 @@
 from os import environ as env
 import keepachangelog
-from github import Github
+from github import Auth, Github, UnknownObjectException
 
 
 class Data(dict):
@@ -17,8 +17,10 @@ def getLatestChange():
     return list(changes.values())[0]
 
 
-github = Github(base_url=env['GITHUB_API_URL'],
-                login_or_token=env['INPUT_TOKEN'])
+github = Github(
+    base_url=env['GITHUB_API_URL'],
+    auth=Auth.Token(env['INPUT_TOKEN'])
+)
 repo = github.get_repo(env['GITHUB_REPOSITORY'])
 
 change = getLatestChange()
@@ -41,26 +43,27 @@ release = repo.create_git_release(
     data['change'],
     env['INPUT_IS-DRAFT'] == 'true',
     data['prerelease'] is not None,
-    env['GITHUB_SHA'])
+    target_commitish=env['GITHUB_SHA']
+)
 
 # Move major tag.
 if env['INPUT_MAJOR-TAG-TEMPLATE'] != '' and data['major'] != 0:
     data['major_tag'] = env['INPUT_MAJOR-TAG-TEMPLATE'].format_map(data)
-    major = repo.get_git_ref(f'tags/{data["major_tag"]}')
-    if major.ref is not None:
+    try:
+        major = repo.get_git_ref(f'tags/{data["major_tag"]}')
         major.edit(env['GITHUB_SHA'])
-    else:
-        repo.create_git_ref(f'refs/tags/{data["major_tag"]}', env['GITHUB_SHA'])
+    except UnknownObjectException:
+        repo.create_git_ref(f'refs/tags/{data['major_tag']}', env['GITHUB_SHA'])
 else:
     data['major_tag'] = ''
 
 # Move minor tag.
 if env['INPUT_MINOR-TAG-TEMPLATE'] != '':
     data['minor_tag'] = env['INPUT_MINOR-TAG-TEMPLATE'].format_map(data)
-    minor = repo.get_git_ref(f'tags/{data["minor_tag"]}')
-    if minor.ref is not None:
+    try:
+        minor = repo.get_git_ref(f'tags/{data["minor_tag"]}')
         minor.edit(env['GITHUB_SHA'])
-    else:
+    except UnknownObjectException:
         repo.create_git_ref(f'refs/tags/{data["minor_tag"]}', env['GITHUB_SHA'])
 else:
     data['minor_tag'] = ''
