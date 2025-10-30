@@ -32,6 +32,10 @@ inputs:
     description: If the GitHub release is a draft.
     required: false
     default: 'false'
+  assets:
+    description: A newline-separated list of files to upload.
+    required: false
+    default: ''
 outputs:
   version:
     description: The version.

@@ -1,6 +1,7 @@
 from os import environ as env
 import keepachangelog
-from github import Github
+from github import Auth, Github, GithubException, UnknownObjectException
+from github.GithubObject import NotSet
 
 
 class Data(dict):
@@ -17,8 +18,10 @@ def getLatestChange():
     return list(changes.values())[0]
 
 
-github = Github(base_url=env['GITHUB_API_URL'],
-                login_or_token=env['INPUT_TOKEN'])
+github = Github(
+    base_url=env['GITHUB_API_URL'],
+    auth=Auth.Token(env['INPUT_TOKEN'])
+)
 repo = github.get_repo(env['GITHUB_REPOSITORY'])
 
 change = getLatestChange()
@@ -35,21 +38,45 @@ data = Data({
 
 # Create release.
 data['tag'] = env['INPUT_TAG-TEMPLATE'].format_map(data)
-release = repo.create_git_release(
-    data['tag'],
-    env['INPUT_NAME-TEMPLATE'].format_map(data),
-    data['change'],
-    env['INPUT_IS-DRAFT'] == 'true',
-    data['prerelease'] is not None,
-    env['GITHUB_SHA'])
+try:
+    release = repo.create_git_release(
+        data['tag'],
+        env['INPUT_NAME-TEMPLATE'].format_map(data),
+        data['change'],
+        env['INPUT_IS-DRAFT'] == 'true',
+        data['prerelease'] is not None,
+        target_commitish=env['GITHUB_SHA']
+    )
+except GithubException as ex:
+    if ex.status != 422:
+        raise
+    # If the tag already exists.
+    release = repo.get_release(data['tag'])
+    release.update_release(
+        env['INPUT_NAME-TEMPLATE'].format_map(data),
+        data['change'],
+        target_commitish=env['GITHUB_SHA']
+    )
+    for asset in release.get_assets():
+        asset.delete_asset()
+
+# Upload assets.
+for entry in env['INPUT_ASSETS'].splitlines():
+    path, _, rest = entry.partition(':')
+    name, _, label = rest.partition(':')
+    release.upload_asset(
+        path,
+        name=name if name != '' else NotSet,
+        label=label
+    )
 
 # Move major tag.
 if env['INPUT_MAJOR-TAG-TEMPLATE'] != '' and data['major'] != 0:
     data['major_tag'] = env['INPUT_MAJOR-TAG-TEMPLATE'].format_map(data)
-    major = repo.get_git_ref(f'tags/{data["major_tag"]}')
-    if major.ref is not None:
+    try:
+        major = repo.get_git_ref(f'tags/{data["major_tag"]}')
         major.edit(env['GITHUB_SHA'])
-    else:
+    except UnknownObjectException:
         repo.create_git_ref(f'refs/tags/{data["major_tag"]}', env['GITHUB_SHA'])
 else:
     data['major_tag'] = ''
@@ -57,10 +84,10 @@ else:
 # Move minor tag.
 if env['INPUT_MINOR-TAG-TEMPLATE'] != '':
     data['minor_tag'] = env['INPUT_MINOR-TAG-TEMPLATE'].format_map(data)
-    minor = repo.get_git_ref(f'tags/{data["minor_tag"]}')
-    if minor.ref is not None:
+    try:
+        minor = repo.get_git_ref(f'tags/{data["minor_tag"]}')
         minor.edit(env['GITHUB_SHA'])
-    else:
+    except UnknownObjectException:
         repo.create_git_ref(f'refs/tags/{data["minor_tag"]}', env['GITHUB_SHA'])
 else:
     data['minor_tag'] = ''
