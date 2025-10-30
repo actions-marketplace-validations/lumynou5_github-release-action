@@ -64,7 +64,7 @@ if env['INPUT_MAJOR-TAG-TEMPLATE'] != '' and data['major'] != 0:
         major = repo.get_git_ref(f'tags/{data["major_tag"]}')
         major.edit(env['GITHUB_SHA'])
     except UnknownObjectException:
-        repo.create_git_ref(f'refs/tags/{data['major_tag']}', env['GITHUB_SHA'])
+        repo.create_git_ref(f'refs/tags/{data["major_tag"]}', env['GITHUB_SHA'])
 else:
     data['major_tag'] = ''
 
