@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- Uploading assets is supported now.
 ### Changed
 - If the tag already exists, for example, the main branch is force pushed, now
   the action won't fail and the release will be updated.

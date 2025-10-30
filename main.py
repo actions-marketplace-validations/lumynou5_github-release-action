@@ -1,6 +1,7 @@
 from os import environ as env
 import keepachangelog
 from github import Auth, Github, GithubException, UnknownObjectException
+from github.GithubObject import NotSet
 
 
 class Data(dict):
@@ -55,6 +56,18 @@ except GithubException as ex:
         env['INPUT_NAME-TEMPLATE'].format_map(data),
         data['change'],
         target_commitish=env['GITHUB_SHA']
+    )
+    for asset in release.get_assets():
+        asset.delete_asset()
+
+# Upload assets.
+for entry in env['INPUT_ASSETS'].splitlines():
+    path, _, rest = entry.partition(':')
+    name, _, label = rest.partition(':')
+    release.upload_asset(
+        path,
+        name=name if name != '' else NotSet,
+        label=label
     )
 
 # Move major tag.

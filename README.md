@@ -21,6 +21,10 @@ jobs:
         uses: lumynou5/github-release-action@v1
         with:
           token: ${{github.token}}
+          assets: |
+            dist/linux-x86_64
+            dist/windows.exe::windows version
+            dist/darwin:macos
 ```
 
 In this example workflow, it'll create a release whenever push to `main` branch.
@@ -65,6 +69,13 @@ with:
 - `is-draft`
   If the GitHub release is a draft.
   Default: `false`.
+- `assets`
+  A newline-separated list of files to upload.  Besides file paths, it also
+  accpets optional name and label (short description for the asset) separated by
+  colons.  For example, `path/to/file:name:label` renames the asset to `name`
+  instead of using the basename of the file.  The name can be omitted by leaving
+  an empty string there (so two colons in a row) if you want to set label only.
+  Default: empty.
 
 The following list shows the parameters that can be used in templates.  To use
 parameters, add a parameter name wrapping with braces to your template, and it
