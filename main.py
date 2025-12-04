@@ -1,6 +1,16 @@
 from os import environ as env
 import keepachangelog
-from github import Github
+from github import Auth, Github, GithubException, UnknownObjectException
+from github.GithubObject import NotSet
+
+
+class Data(dict):
+    def __missing__(self, key):
+        return f'{{{key}}}'
+
+
+def xstr(s):
+    return str(s) if s is not None else ''
 
 
 def getLatestChange():
@@ -8,59 +18,86 @@ def getLatestChange():
     return list(changes.values())[0]
 
 
-def fillTemplate(template, data):
-    result = ''
-    i = 0
-    while i < len(template):
-        if template[i] == '{':
-            end = template.find('}')
-            if end == -1:
-                result += template[i:]
-                break
-            key = template[i + 1:end]
-            if key in data:
-                result += str(data[key]) if data[key] is not None else ''
-            else:
-                result += template[i:end + 1]
-            i = end + 1
-        else:
-            result += template[i]
-            i += 1
-    return result
-
-
-github = Github(base_url=env['GITHUB_API_URL'],
-                login_or_token=env['INPUT_TOKEN'])
+github = Github(
+    base_url=env['GITHUB_API_URL'],
+    auth=Auth.Token(env['INPUT_TOKEN'])
+)
 repo = github.get_repo(env['GITHUB_REPOSITORY'])
 
 change = getLatestChange()
-data = {
-    'version': change['metadata']['version'],
-    'major': change['metadata']['semantic_version']['major'],
-    'minor': change['metadata']['semantic_version']['minor'],
-    'patch': change['metadata']['semantic_version']['patch'],
-    'prerelease': change['metadata']['semantic_version']['prerelease'],
-    'build': change['metadata']['semantic_version']['buildmetadata'],
-    'release-date': change['metadata']['release_date'],
-}
+data = Data({
+    'version': xstr(change['metadata']['version']),
+    'major': xstr(change['metadata']['semantic_version']['major']),
+    'minor': xstr(change['metadata']['semantic_version']['minor']),
+    'patch': xstr(change['metadata']['semantic_version']['patch']),
+    'prerelease': xstr(change['metadata']['semantic_version']['prerelease']),
+    'build': xstr(change['metadata']['semantic_version']['buildmetadata']),
+    'release-date': xstr(change['metadata']['release_date']),
+    'change': xstr(change['raw']),
+})
 
-res = repo.create_git_release(fillTemplate(env['INPUT_TAG-TEMPLATE'], data),
-                              fillTemplate(env['INPUT_NAME-TEMPLATE'], data),
-                              change['raw'],
-                              env['INPUT_IS-DRAFT'] == 'true',
-                              data['prerelease'] is not None,
-                              env['GITHUB_SHA'])
+# Create release.
+data['tag'] = env['INPUT_TAG-TEMPLATE'].format_map(data)
+try:
+    release = repo.create_git_release(
+        data['tag'],
+        env['INPUT_NAME-TEMPLATE'].format_map(data),
+        data['change'],
+        env['INPUT_IS-DRAFT'] == 'true',
+        data['prerelease'] is not None,
+        target_commitish=env['GITHUB_SHA']
+    )
+except GithubException as ex:
+    if ex.status != 422:
+        raise
+    # If the tag already exists.
+    release = repo.get_release(data['tag'])
+    release.update_release(
+        env['INPUT_NAME-TEMPLATE'].format_map(data),
+        data['change'],
+        target_commitish=env['GITHUB_SHA']
+    )
+    for asset in release.get_assets():
+        asset.delete_asset()
 
-major_name = fillTemplate(env['INPUT_MAJOR-TAG-TEMPLATE'], data)
-major = repo.get_git_ref(f'tags/{major_name}')
-if major.ref is not None:
-    major.edit(env['GITHUB_SHA'])
+# Upload assets.
+for entry in env['INPUT_ASSETS'].splitlines():
+    path, _, rest = entry.partition(':')
+    name, _, label = rest.partition(':')
+    release.upload_asset(
+        path,
+        name=name if name != '' else NotSet,
+        label=label
+    )
+
+# Move major tag.
+if env['INPUT_MAJOR-TAG-TEMPLATE'] != '' and data['major'] != 0:
+    data['major_tag'] = env['INPUT_MAJOR-TAG-TEMPLATE'].format_map(data)
+    try:
+        major = repo.get_git_ref(f'tags/{data["major_tag"]}')
+        major.edit(env['GITHUB_SHA'])
+    except UnknownObjectException:
+        repo.create_git_ref(f'refs/tags/{data["major_tag"]}', env['GITHUB_SHA'])
 else:
-    repo.create_git_ref(f'refs/tags/{major_name}', env['GITHUB_SHA'])
+    data['major_tag'] = ''
 
-data['html-url'] = res.html_url
-data['upload-url'] = res.upload_url
+# Move minor tag.
+if env['INPUT_MINOR-TAG-TEMPLATE'] != '':
+    data['minor_tag'] = env['INPUT_MINOR-TAG-TEMPLATE'].format_map(data)
+    try:
+        minor = repo.get_git_ref(f'tags/{data["minor_tag"]}')
+        minor.edit(env['GITHUB_SHA'])
+    except UnknownObjectException:
+        repo.create_git_ref(f'refs/tags/{data["minor_tag"]}', env['GITHUB_SHA'])
+else:
+    data['minor_tag'] = ''
 
+# Output.
+data['html-url'] = release.html_url
+data['upload-url'] = release.upload_url
 with open(env['GITHUB_OUTPUT'], 'a') as out:
     for (key, val) in data.items():
-        print(f'{key}={val if val is not None else ""}', file=out)
+        delimiter = 'EOF'
+        while delimiter in val:
+            delimiter *= 2
+        print(f'{key}<<{delimiter}\n{val}\n{delimiter}', file=out)

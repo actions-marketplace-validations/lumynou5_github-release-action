@@ -20,6 +20,10 @@ inputs:
     description: The template of the Git tag of the major version.
     required: false
     default: v{major}
+  minor-tag-template:
+    description: The template of the Git tag of the major version.
+    required: false
+    default: v{major}.{minor}
   name-template:
     description: The template of the GitHub release.
     required: false
@@ -27,7 +31,11 @@ inputs:
   is-draft:
     description: If the GitHub release is a draft.
     required: false
-    default: false
+    default: 'false'
+  assets:
+    description: A newline-separated list of files to upload.
+    required: false
+    default: ''
 outputs:
   version:
     description: The version.
@@ -43,6 +51,14 @@ outputs:
     description: The build number or an empty string.
   release-date:
     description: The release date.
+  change:
+    description: The changelog of last version.
+  tag:
+    description: The name of the Git tag.
+  major-tag:
+    description: The name of the Git tag of the major version.
+  minor-tag:
+    description: The name of the Git tag of the minor version.
   html-url:
     description: The URL to the page of the GitHub release.
   upload-url:
